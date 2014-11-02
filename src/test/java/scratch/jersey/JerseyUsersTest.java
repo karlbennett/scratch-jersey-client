@@ -15,8 +15,10 @@ import java.util.Map;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.client.Invocation.Builder;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -50,6 +52,7 @@ public class JerseyUsersTest {
 
         when(builder.post(entity(user, APPLICATION_JSON_TYPE))).thenReturn(response);
 
+        when(response.getStatus()).thenReturn(CREATED.getStatusCode());
         when(response.readEntity(Map.class)).thenReturn(map);
 
         when(map.get("id")).thenReturn(ID);
@@ -66,7 +69,10 @@ public class JerseyUsersTest {
         when(target.path(ID.toString())).thenReturn(target);
         when(target.request(APPLICATION_JSON_TYPE)).thenReturn(builder);
 
-        when(builder.get(User.class)).thenReturn(user);
+        when(response.getStatus()).thenReturn(OK.getStatusCode());
+        when(response.readEntity(User.class)).thenReturn(user);
+
+        when(builder.get()).thenReturn(response);
 
         final User actual = new JerseyUsers(target).retrieve(ID);
 
@@ -79,7 +85,11 @@ public class JerseyUsersTest {
         when(target.path("users")).thenReturn(target);
         when(target.request(APPLICATION_JSON_TYPE)).thenReturn(builder);
 
-        when(builder.get(new GenericType<List<User>>() {})).thenReturn(users);
+        when(response.getStatus()).thenReturn(OK.getStatusCode());
+        when(response.readEntity(new GenericType<List<User>>() {
+        })).thenReturn(users);
+
+        when(builder.get()).thenReturn(response);
 
         final Iterable<User> actual = new JerseyUsers(target).retrieve();
 
@@ -95,9 +105,11 @@ public class JerseyUsersTest {
         when(target.path(ID.toString())).thenReturn(target);
         when(target.request(APPLICATION_JSON_TYPE)).thenReturn(builder);
 
-        new JerseyUsers(target).update(user);
+        when(response.getStatus()).thenReturn(NO_CONTENT.getStatusCode());
 
-        verify(builder).put(entity(user, APPLICATION_JSON_TYPE));
+        when(builder.put(entity(user, APPLICATION_JSON_TYPE))).thenReturn(response);
+
+        new JerseyUsers(target).update(user);
     }
 
     @Test
@@ -107,9 +119,11 @@ public class JerseyUsersTest {
         when(target.path(ID.toString())).thenReturn(target);
         when(target.request(APPLICATION_JSON_TYPE)).thenReturn(builder);
 
-        new JerseyUsers(target).delete(ID);
+        when(response.getStatus()).thenReturn(NO_CONTENT.getStatusCode());
 
-        verify(builder).delete();
+        when(builder.delete()).thenReturn(response);
+
+        new JerseyUsers(target).delete(ID);
     }
 
     @Test
@@ -118,8 +132,10 @@ public class JerseyUsersTest {
         when(target.path("users")).thenReturn(target);
         when(target.request(APPLICATION_JSON_TYPE)).thenReturn(builder);
 
-        new JerseyUsers(target).deleteAll();
+        when(response.getStatus()).thenReturn(NO_CONTENT.getStatusCode());
 
-        verify(builder).delete();
+        when(builder.delete()).thenReturn(response);
+
+        new JerseyUsers(target).deleteAll();
     }
 }

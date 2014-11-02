@@ -13,20 +13,21 @@ import scratch.user.Address;
 import scratch.user.User;
 import scratch.user.Users;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.client.ClientBuilder;
-
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import static java.lang.String.format;
-import static java.util.Collections.*;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = TestUsersConfiguration.class)
+@SpringApplicationConfiguration(classes = MockUsersConfiguration.class)
 @WebAppConfiguration("classpath:")
 @IntegrationTest({"server.port=0", "management.port=0"})
 public class JerseyUsersIntegrationTest {
@@ -45,6 +46,8 @@ public class JerseyUsersIntegrationTest {
 
     private static final User USER = user();
 
+    private static final String MESSAGE = "test message";
+
     private static User user() {
 
         final User user = new User(EMAIL, FIRST_NAME, LAST_NAME, PHONE_NUMBER,
@@ -55,6 +58,8 @@ public class JerseyUsersIntegrationTest {
     }
 
     @Autowired
+    private MockUsersController controller;
+
     private Users mockUsers;
 
     @Value("${local.server.port}")
@@ -64,6 +69,10 @@ public class JerseyUsersIntegrationTest {
 
     @Before
     public void setUp() {
+
+        mockUsers = mock(Users.class);
+
+        controller.setUsers(mockUsers);
 
         users = new JerseyUsers(ClientBuilder.newClient().target(format("http://localhost:%d/", port)));
     }
@@ -76,12 +85,52 @@ public class JerseyUsersIntegrationTest {
         assertEquals("the correct user id should be returned.", ID, users.create(USER));
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void I_cannot_create_an_invalid_user() {
+
+        when(mockUsers.create(USER)).thenThrow(new BadRequestException(MESSAGE));
+
+        users.create(USER);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void I_cannot_create_a_user_on_a_broken_server() {
+
+        when(mockUsers.create(USER)).thenThrow(new RuntimeException(MESSAGE));
+
+        users.create(USER);
+    }
+
     @Test
     public void I_can_retrieve_a_user() {
 
         when(mockUsers.retrieve(ID)).thenReturn(USER);
 
         assertEquals("the correct user should be returned.", USER, users.retrieve(ID));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void I_cannot_retrieve_a_user_that_does_not_exist() {
+
+        when(mockUsers.retrieve(ID)).thenThrow(new NotFoundException(MESSAGE));
+
+        users.retrieve(ID);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void I_cannot_retrieve_a_user_with_an_invalid_id() {
+
+        when(mockUsers.retrieve(ID)).thenThrow(new BadRequestException(MESSAGE));
+
+        users.retrieve(ID);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void I_cannot_retrieve_a_user_on_a_broken_server() {
+
+        when(mockUsers.retrieve(ID)).thenThrow(new RuntimeException(MESSAGE));
+
+        users.retrieve(ID);
     }
 
     @Test
@@ -95,6 +144,22 @@ public class JerseyUsersIntegrationTest {
         assertEquals("the correct user should be returned.", expected, toSet(users.retrieve()));
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void I_cannot_retrieve_invalid_users() {
+
+        when(mockUsers.retrieve()).thenThrow(new BadRequestException(MESSAGE));
+
+        users.retrieve();
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void I_cannot_retrieve_all_users_on_a_broken_server() {
+
+        when(mockUsers.retrieve()).thenThrow(new RuntimeException(MESSAGE));
+
+        users.retrieve();
+    }
+
     @Test
     public void I_can_update_a_user() {
 
@@ -103,12 +168,60 @@ public class JerseyUsersIntegrationTest {
         verify(mockUsers).update(USER);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void I_can_update_a_user_with_an_invalid_id() {
+
+        doThrow(new NotFoundException(MESSAGE)).when(mockUsers).update(USER);
+
+        users.update(USER);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void I_can_update_an_invalid_user() {
+
+        doThrow(new BadRequestException(MESSAGE)).when(mockUsers).update(USER);
+
+        users.update(USER);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void I_can_update_a_user_on_a_broken_server() {
+
+        doThrow(new RuntimeException(MESSAGE)).when(mockUsers).update(USER);
+
+        users.update(USER);
+    }
+
     @Test
     public void I_can_delete_a_user() {
 
         users.delete(ID);
 
         verify(mockUsers).delete(ID);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void I_cannot_delete_a_user_that_does_not_exist() {
+
+        doThrow(new NotFoundException(MESSAGE)).when(mockUsers).delete(ID);
+
+        users.delete(ID);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void I_cannot_delete_an_invalid_user() {
+
+        doThrow(new BadRequestException(MESSAGE)).when(mockUsers).delete(ID);
+
+        users.delete(ID);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void I_cannot_delete_a_user_on_a_broken_server() {
+
+        doThrow(new RuntimeException(MESSAGE)).when(mockUsers).delete(ID);
+
+        users.delete(ID);
     }
 
     private static <T> Set<T> toSet(Iterable<T> iterable) {

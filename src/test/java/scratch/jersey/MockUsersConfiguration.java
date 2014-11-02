@@ -11,7 +11,7 @@ import static org.mockito.Mockito.mock;
 @Configuration
 @EnableAutoConfiguration
 @ComponentScan
-public class TestUsersConfiguration {
+public class MockUsersConfiguration {
 
     @Bean
     public Users mockUsers() {
