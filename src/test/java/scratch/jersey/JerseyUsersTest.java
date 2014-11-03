@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import scratch.user.Id;
 import scratch.user.User;
 
 import javax.ws.rs.client.WebTarget;
@@ -25,6 +26,9 @@ import static org.mockito.Mockito.when;
 public class JerseyUsersTest {
 
     private static final Long ID = 1L;
+
+    @Mock
+    private Id id;
 
     @Mock
     private User user;
@@ -53,13 +57,11 @@ public class JerseyUsersTest {
         when(builder.post(entity(user, APPLICATION_JSON_TYPE))).thenReturn(response);
 
         when(response.getStatus()).thenReturn(CREATED.getStatusCode());
-        when(response.readEntity(Map.class)).thenReturn(map);
+        when(response.readEntity(Id.class)).thenReturn(id);
 
-        when(map.get("id")).thenReturn(ID);
+        final Id actual = new JerseyUsers(target).create(user);
 
-        final Long id = new JerseyUsers(target).create(user);
-
-        assertEquals("the created id should be correct.", ID, id);
+        assertEquals("the created id should be correct.", id, actual);
     }
 
     @Test

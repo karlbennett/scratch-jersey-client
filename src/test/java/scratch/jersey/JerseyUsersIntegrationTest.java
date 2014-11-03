@@ -10,6 +10,7 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import scratch.user.Address;
+import scratch.user.Id;
 import scratch.user.User;
 import scratch.user.Users;
 
@@ -32,13 +33,14 @@ import static org.mockito.Mockito.when;
 @IntegrationTest({"server.port=0", "management.port=0"})
 public class JerseyUsersIntegrationTest {
 
-    private static final Long ID = 1L;
+    private static final Long USER_ID = 1L;
     private static final String EMAIL = "test@email.com";
     private static final String FIRST_NAME = "Test";
     private static final String LAST_NAME = "User";
     private static final String PHONE_NUMBER = "5551234";
 
-    private static final Integer NUMBER = 2;
+    private static final Long ADDRESS_ID = 2L;
+    private static final Integer NUMBER = 3;
     private static final String STREET = "This Road";
     private static final String SUBURB = "That Suburb";
     private static final String CITY = "Your City";
@@ -46,13 +48,16 @@ public class JerseyUsersIntegrationTest {
 
     private static final User USER = user();
 
+    private static final Id ID = new Id(USER);
+
     private static final String MESSAGE = "test message";
 
     private static User user() {
 
         final User user = new User(EMAIL, FIRST_NAME, LAST_NAME, PHONE_NUMBER,
                 new Address(NUMBER, STREET, SUBURB, CITY, POSTCODE));
-        user.setId(ID);
+        user.setId(USER_ID);
+        user.getAddress().setId(ADDRESS_ID);
 
         return user;
     }
@@ -104,33 +109,33 @@ public class JerseyUsersIntegrationTest {
     @Test
     public void I_can_retrieve_a_user() {
 
-        when(mockUsers.retrieve(ID)).thenReturn(USER);
+        when(mockUsers.retrieve(USER_ID)).thenReturn(USER);
 
-        assertEquals("the correct user should be returned.", USER, users.retrieve(ID));
+        assertEquals("the correct user should be returned.", USER, users.retrieve(USER_ID));
     }
 
     @Test(expected = IllegalStateException.class)
     public void I_cannot_retrieve_a_user_that_does_not_exist() {
 
-        when(mockUsers.retrieve(ID)).thenThrow(new NotFoundException(MESSAGE));
+        when(mockUsers.retrieve(USER_ID)).thenThrow(new NotFoundException(MESSAGE));
 
-        users.retrieve(ID);
+        users.retrieve(USER_ID);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void I_cannot_retrieve_a_user_with_an_invalid_id() {
 
-        when(mockUsers.retrieve(ID)).thenThrow(new BadRequestException(MESSAGE));
+        when(mockUsers.retrieve(USER_ID)).thenThrow(new BadRequestException(MESSAGE));
 
-        users.retrieve(ID);
+        users.retrieve(USER_ID);
     }
 
     @Test(expected = RuntimeException.class)
     public void I_cannot_retrieve_a_user_on_a_broken_server() {
 
-        when(mockUsers.retrieve(ID)).thenThrow(new RuntimeException(MESSAGE));
+        when(mockUsers.retrieve(USER_ID)).thenThrow(new RuntimeException(MESSAGE));
 
-        users.retrieve(ID);
+        users.retrieve(USER_ID);
     }
 
     @Test
@@ -195,33 +200,57 @@ public class JerseyUsersIntegrationTest {
     @Test
     public void I_can_delete_a_user() {
 
-        users.delete(ID);
+        users.delete(USER_ID);
 
-        verify(mockUsers).delete(ID);
+        verify(mockUsers).delete(USER_ID);
     }
 
     @Test(expected = IllegalStateException.class)
     public void I_cannot_delete_a_user_that_does_not_exist() {
 
-        doThrow(new NotFoundException(MESSAGE)).when(mockUsers).delete(ID);
+        doThrow(new NotFoundException(MESSAGE)).when(mockUsers).delete(USER_ID);
 
-        users.delete(ID);
+        users.delete(USER_ID);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void I_cannot_delete_an_invalid_user() {
 
-        doThrow(new BadRequestException(MESSAGE)).when(mockUsers).delete(ID);
+        doThrow(new BadRequestException(MESSAGE)).when(mockUsers).delete(USER_ID);
 
-        users.delete(ID);
+        users.delete(USER_ID);
     }
 
     @Test(expected = RuntimeException.class)
     public void I_cannot_delete_a_user_on_a_broken_server() {
 
-        doThrow(new RuntimeException(MESSAGE)).when(mockUsers).delete(ID);
+        doThrow(new RuntimeException(MESSAGE)).when(mockUsers).delete(USER_ID);
 
-        users.delete(ID);
+        users.delete(USER_ID);
+    }
+
+    @Test
+    public void I_can_delete_all_users() {
+
+        users.deleteAll();
+
+        verify(mockUsers).deleteAll();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void I_cannot_delete_any_invalid_users() {
+
+        doThrow(new BadRequestException(MESSAGE)).when(mockUsers).deleteAll();
+
+        users.deleteAll();
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void I_cannot_delete_any_users_on_a_broken_server() {
+
+        doThrow(new RuntimeException(MESSAGE)).when(mockUsers).deleteAll();
+
+        users.deleteAll();
     }
 
     private static <T> Set<T> toSet(Iterable<T> iterable) {

@@ -1,5 +1,6 @@
 package scratch.jersey;
 
+import scratch.user.Id;
 import scratch.user.User;
 import scratch.user.Users;
 
@@ -34,7 +35,7 @@ public class JerseyUsers implements Users {
     }
 
     @Override
-    public Long create(User user) {
+    public Id create(User user) {
 
         final Response response = target.path(USERS).request(APPLICATION_JSON_TYPE)
                 .post(entity(user, APPLICATION_JSON_TYPE));
@@ -42,9 +43,7 @@ public class JerseyUsers implements Users {
         checkForBadRequest(response);
         checkForCorrectStatus(response, CREATED.getStatusCode());
 
-        final Map body = response.readEntity(Map.class);
-
-        return Long.valueOf(body.get("id").toString());
+        return response.readEntity(Id.class);
     }
 
     @Override
